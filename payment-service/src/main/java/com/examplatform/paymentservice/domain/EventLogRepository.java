@@ -1,0 +1,6 @@
+package com.examplatform.paymentservice.domain;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.UUID;
+public interface EventLogRepository extends JpaRepository<EventLog, UUID> {
+    boolean existsByEventId(String eventId);
+}
