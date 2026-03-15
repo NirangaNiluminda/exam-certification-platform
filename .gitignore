@@ -31,3 +31,8 @@ logs/
 
 # Docker local overrides
 docker-compose.override.yml
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

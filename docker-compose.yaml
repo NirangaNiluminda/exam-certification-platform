@@ -647,3 +647,22 @@ services:
       "
     networks:
       - exam-net
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Frontend — React/TypeScript SPA served via nginx
+  # Dev:  http://localhost:5173  (npm run dev inside frontend/)
+  # Prod: http://localhost:3000  (docker compose up --build frontend)
+  # ──────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - exam-net
+    restart: unless-stopped
