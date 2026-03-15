@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  # Spring Cloud Gateway is reactive (Netty) — disable MVC auto-config
+  main:
+    web-application-type: reactive
+
+  # Disable Spring Security default login form — gateway is stateless
+  security:
+    user:
+      name: ignored
+
+  cloud:
+    gateway:
+      # Global CORS (adjust origins for production)
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "GET,POST,PUT,DELETE,OPTIONS"
+            allowedHeaders: "*"
+            maxAge: 3600
+
+      # Circuit breaker / timeout defaults
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 10s
+
+# JWT public key — used by JwtAuthGatewayFilter to verify RS256 tokens
+jwt:
+  public-key-path: keys/public_key.pem
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.examplatform: INFO
+    org.springframework.cloud.gateway: INFO
+    reactor.netty: WARN
