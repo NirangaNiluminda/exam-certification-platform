@@ -1,0 +1,649 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────
+#  Online Exam & Certification Platform
+#  EC7205 Cloud Computing — University of Ruhuna
+# ─────────────────────────────────────────────
+
+networks:
+  exam-net:
+    driver: bridge
+
+volumes:
+  postgres-enrollment-data:
+  postgres-payment-data:
+  postgres-exam-data:
+  postgres-grading-data:
+  postgres-certificate-data:
+  postgres-auth-data:
+  zookeeper-data:
+  kafka-1-data:
+  kafka-2-data:
+  kafka-3-data:
+  minio-data:
+  sonarqube-data:
+  sonarqube-logs:
+  jenkins-home:
+
+services:
+
+  # ── POSTGRESQL DATABASES (one per service) ─────────────────────
+
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: postgres-auth
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      retries: 5
+
+  postgres-enrollment:
+    image: postgres:16-alpine
+    container_name: postgres-enrollment
+    environment:
+      POSTGRES_DB: enrollment_db
+      POSTGRES_USER: enrollment_user
+      POSTGRES_PASSWORD: enrollment_pass
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-enrollment-data:/var/lib/postgresql/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U enrollment_user -d enrollment_db"]
+      interval: 10s
+      retries: 5
+
+  postgres-payment:
+    image: postgres:16-alpine
+    container_name: postgres-payment
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_db"]
+      interval: 10s
+      retries: 5
+
+  postgres-exam:
+    image: postgres:16-alpine
+    container_name: postgres-exam
+    environment:
+      POSTGRES_DB: exam_db
+      POSTGRES_USER: exam_user
+      POSTGRES_PASSWORD: exam_pass
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-exam-data:/var/lib/postgresql/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exam_user -d exam_db"]
+      interval: 10s
+      retries: 5
+
+  postgres-grading:
+    image: postgres:16-alpine
+    container_name: postgres-grading
+    environment:
+      POSTGRES_DB: grading_db
+      POSTGRES_USER: grading_user
+      POSTGRES_PASSWORD: grading_pass
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres-grading-data:/var/lib/postgresql/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grading_user -d grading_db"]
+      interval: 10s
+      retries: 5
+
+  postgres-certificate:
+    image: postgres:16-alpine
+    container_name: postgres-certificate
+    environment:
+      POSTGRES_DB: certificate_db
+      POSTGRES_USER: certificate_user
+      POSTGRES_PASSWORD: certificate_pass
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_replication_slots=4
+      -c max_wal_senders=4
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres-certificate-data:/var/lib/postgresql/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certificate_user -d certificate_db"]
+      interval: 10s
+      retries: 5
+
+  # ── KAFKA CLUSTER (3 brokers for HA) ───────────────────────────
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
+      interval: 10s
+      retries: 5
+
+  kafka-1:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka-1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      retries: 5
+
+  kafka-2:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka-2
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "9093:9093"
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data
+    networks:
+      - exam-net
+
+  kafka-3:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka-3
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9094
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "9094:9094"
+    volumes:
+      - kafka-3-data:/var/lib/kafka/data
+    networks:
+      - exam-net
+
+  # ── KAFKA CONNECT (Debezium CDC) ────────────────────────────────
+
+  kafka-connect:
+    image: debezium/connect:2.6
+    container_name: kafka-connect
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      postgres-enrollment:
+        condition: service_healthy
+      postgres-payment:
+        condition: service_healthy
+      postgres-exam:
+        condition: service_healthy
+      postgres-grading:
+        condition: service_healthy
+      postgres-certificate:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      GROUP_ID: exam-connect-cluster
+      CONFIG_STORAGE_TOPIC: exam.connect.configs
+      OFFSET_STORAGE_TOPIC: exam.connect.offsets
+      STATUS_STORAGE_TOPIC: exam.connect.status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 3
+      OFFSET_STORAGE_REPLICATION_FACTOR: 3
+      STATUS_STORAGE_REPLICATION_FACTOR: 3
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    ports:
+      - "8083:8083"
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/connectors"]
+      interval: 15s
+      retries: 10
+      start_period: 30s
+
+  # ── KAFKA TOPIC SETUP (runs once, then exits) ───────────────────
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka-setup
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      sleep 20
+      kafka-topics --create --if-not-exists --bootstrap-server kafka-1:9092 --replication-factor 3 --partitions 3 --topic payment.inbox.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka-1:9092 --replication-factor 3 --partitions 3 --topic exam.inbox.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka-1:9092 --replication-factor 3 --partitions 3 --topic grading.inbox.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka-1:9092 --replication-factor 3 --partitions 3 --topic certificate.inbox.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka-1:9092 --replication-factor 3 --partitions 3 --topic enrollment.inbox.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka-1:9092 --replication-factor 3 --partitions 3 --topic notification.events
+      echo 'Kafka topics created successfully.'
+      "
+    networks:
+      - exam-net
+
+  # ── MINIO (S3-compatible object storage for PDF certificates) ──
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console UI
+    volumes:
+      - minio-data:/data
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      retries: 5
+
+  # ── KAFKA UI (demo tool — shows topic events in browser) ────────
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka-1
+    environment:
+      KAFKA_CLUSTERS_0_NAME: exam-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+    ports:
+      - "8088:8080"
+    networks:
+      - exam-net
+
+  # ── SONARQUBE (static code analysis) ───────────────────────────
+
+  sonarqube:
+    image: sonarqube:10-community
+    container_name: sonarqube
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    ports:
+      - "9090:9000"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-logs:/opt/sonarqube/logs
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      retries: 10
+      start_period: 60s
+
+  # ── JENKINS (CD pipeline) ───────────────────────────────────────
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: jenkins
+    user: root
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+    ports:
+      - "8089:8080"    # Jenkins UI
+      - "50000:50000"  # Agent port
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - exam-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      retries: 10
+      start_period: 60s
+
+  # ── APPLICATION SERVICES ────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: auth_user
+      SPRING_DATASOURCE_PASSWORD: auth_pass
+      JWT_PRIVATE_KEY_PATH: /keys/private_key.pem
+      JWT_PUBLIC_KEY_PATH: /keys/public_key.pem
+      SERVER_PORT: 8081
+    volumes:
+      - ./keys:/keys:ro
+    ports:
+      - "8081:8081"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  enrollment-service:
+    build:
+      context: ./enrollment-service
+      dockerfile: Dockerfile
+    container_name: enrollment-service
+    depends_on:
+      postgres-enrollment:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-enrollment:5432/enrollment_db
+      SPRING_DATASOURCE_USERNAME: enrollment_user
+      SPRING_DATASOURCE_PASSWORD: enrollment_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      JWT_PUBLIC_KEY_PATH: /keys/public_key.pem
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    depends_on:
+      postgres-payment:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-payment:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: payment_user
+      SPRING_DATASOURCE_PASSWORD: payment_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      SERVER_PORT: 8083
+    ports:
+      - "18083:8083"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8083/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  exam-service:
+    build:
+      context: ./exam-service
+      dockerfile: Dockerfile
+    container_name: exam-service
+    depends_on:
+      postgres-exam:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-exam:5432/exam_db
+      SPRING_DATASOURCE_USERNAME: exam_user
+      SPRING_DATASOURCE_PASSWORD: exam_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      JWT_PUBLIC_KEY_PATH: /keys/public_key.pem
+      SERVER_PORT: 8084
+    ports:
+      - "8084:8084"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8084/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  grading-service:
+    build:
+      context: ./grading-service
+      dockerfile: Dockerfile
+    container_name: grading-service
+    depends_on:
+      postgres-grading:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-grading:5432/grading_db
+      SPRING_DATASOURCE_USERNAME: grading_user
+      SPRING_DATASOURCE_PASSWORD: grading_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      SERVER_PORT: 8085
+    ports:
+      - "8085:8085"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8085/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  certificate-service:
+    build:
+      context: ./certificate-service
+      dockerfile: Dockerfile
+    container_name: certificate-service
+    depends_on:
+      postgres-certificate:
+        condition: service_healthy
+      kafka-1:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-certificate:5432/certificate_db
+      SPRING_DATASOURCE_USERNAME: certificate_user
+      SPRING_DATASOURCE_PASSWORD: certificate_pass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_BUCKET: certificates
+      SERVER_PORT: 8086
+    ports:
+      - "8086:8086"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8086/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
+      SERVER_PORT: 8087
+    ports:
+      - "8087:8087"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8087/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 40s
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      enrollment-service:
+        condition: service_healthy
+      exam-service:
+        condition: service_healthy
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      ENROLLMENT_SERVICE_URL: http://enrollment-service:8082
+      PAYMENT_SERVICE_URL: http://payment-service:8083
+      EXAM_SERVICE_URL: http://exam-service:8084
+      GRADING_SERVICE_URL: http://grading-service:8085
+      CERTIFICATE_SERVICE_URL: http://certificate-service:8086
+      JWT_PUBLIC_KEY_PATH: /keys/public_key.pem
+      SERVER_PORT: 8080
+    volumes:
+      - ./keys:/keys:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - exam-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health"]
+      interval: 30s
+      retries: 5
+      start_period: 50s
+
+  # ── DEBEZIUM CONNECTOR REGISTRATION (runs once, then exits) ────
+
+  connector-setup:
+    image: curlimages/curl:latest
+    container_name: connector-setup
+    depends_on:
+      kafka-connect:
+        condition: service_healthy
+    volumes:
+      - ./debezium:/debezium
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Registering Debezium connectors...'
+      sleep 5
+      curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' -d @/debezium/enrollment-connector.json
+      curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' -d @/debezium/payment-connector.json
+      curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' -d @/debezium/exam-connector.json
+      curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' -d @/debezium/grading-connector.json
+      curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' -d @/debezium/certificate-connector.json
+      echo 'All connectors registered.'
+      "
+    networks:
+      - exam-net
