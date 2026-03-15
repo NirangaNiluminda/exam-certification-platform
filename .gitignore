@@ -1,0 +1,33 @@
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.eclipse/
+.classpath
+.project
+.settings/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Spring Boot config overrides
+application-local.yml
+application-local.properties
+
+# Logs
+*.log
+logs/
+
+# Docker local overrides
+docker-compose.override.yml
