@@ -1,0 +1,554 @@
+{
+  "info": {
+    "_postman_id": "ec7205-exam-platform-collection",
+    "name": "EC7205 — Online Exam & Certification Platform",
+    "description": "Complete API collection for EC7205 Cloud Computing Assignment 2 — Online Exam & Certification Platform built with Spring Boot microservices.\n\n**Base URL:** http://localhost:8080 (API Gateway)\n\n**Authentication:** Use the Login request (Auth folder) — the token is automatically extracted and stored as `{{token}}` for all subsequent requests.\n\n**Services:**\n- Auth Service (port 8081)\n- Enrollment Service (port 8082)\n- Exam Service (port 8084)\n- Certificate Service (port 8086)\n- API Gateway (port 8080) ← all requests go here",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "description": "API Gateway base URL"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "JWT Bearer token — auto-set by the Login request test script"
+    },
+    {
+      "key": "examId",
+      "value": "a1000000-0000-0000-0000-000000000001",
+      "description": "Seeded exam ID (Cloud Computing Fundamentals)"
+    },
+    {
+      "key": "slotId",
+      "value": "",
+      "description": "Exam slot ID — set after enrollment + slot creation"
+    },
+    {
+      "key": "enrollmentId",
+      "value": "",
+      "description": "Enrollment ID — set after POST /enrollments"
+    },
+    {
+      "key": "certificateId",
+      "value": "",
+      "description": "Certificate ID — available after passing an exam"
+    },
+    {
+      "key": "verifyCode",
+      "value": "",
+      "description": "Certificate verification code"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — register and login. Login auto-stores the JWT token.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test Student\",\n  \"email\": \"student@test.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register a new student account.\n\n**Response 201:**\n```json\n{\n  \"accessToken\": \"eyJ...\",\n  \"userId\": \"uuid\",\n  \"email\": \"student@test.com\",\n  \"role\": \"STUDENT\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.accessToken) {",
+                  "    pm.collectionVariables.set('token', jsonData.accessToken);",
+                  "    console.log('Token saved:', jsonData.accessToken.substring(0, 40) + '...');",
+                  "} else {",
+                  "    console.error('Login failed — no accessToken in response:', JSON.stringify(jsonData));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@test.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login with email and password.\n\n**The test script automatically extracts `accessToken` and stores it as `{{token}}` for all subsequent requests.**\n\n**Response 200:**\n```json\n{\n  \"accessToken\": \"eyJ...\",\n  \"userId\": \"uuid\",\n  \"email\": \"student@test.com\",\n  \"role\": \"STUDENT\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Exams (Student)",
+      "description": "Student-facing exam endpoints — browse available exams.",
+      "item": [
+        {
+          "name": "List All Exams",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exams"]
+            },
+            "description": "Get all active exams available for enrollment.\n\n**Response 200:** Array of exam objects\n```json\n[\n  {\n    \"examId\": \"a1000000-0000-0000-0000-000000000001\",\n    \"title\": \"Cloud Computing Fundamentals\",\n    \"description\": \"...\",\n    \"durationMinutes\": 90,\n    \"passingScore\": 70,\n    \"totalMarks\": 100,\n    \"price\": 49.99\n  }\n]\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Exam by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/{{examId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exams", "{{examId}}"]
+            },
+            "description": "Get details for a specific exam by its ID.\n\n**Response 200:** Single exam object\n**Response 404:** Exam not found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Exam Slots",
+      "description": "Exam slot endpoints — start an exam session, fetch questions, and submit answers. A slot is created when the enrollment SAGA completes successfully.",
+      "item": [
+        {
+          "name": "Start Exam Slot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/slots/{{slotId}}/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exams", "slots", "{{slotId}}", "start"]
+            },
+            "description": "Start an exam slot session. This sets the start time and calculates the deadline.\n\n**Response 200:**\n```json\n{\n  \"slotId\": \"uuid\",\n  \"startedAt\": \"2026-03-15T10:00:00Z\",\n  \"deadlineAt\": \"2026-03-15T11:30:00Z\",\n  \"durationMinutes\": 90\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Slot Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/slots/{{slotId}}/questions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exams", "slots", "{{slotId}}", "questions"]
+            },
+            "description": "Retrieve all questions for an active exam slot.\n\n**Response 200:**\n```json\n{\n  \"slotId\": \"uuid\",\n  \"deadlineAt\": \"2026-03-15T11:30:00Z\",\n  \"questions\": [\n    {\n      \"questionId\": \"uuid\",\n      \"questionText\": \"What is containerization?\",\n      \"optionA\": \"...\",\n      \"optionB\": \"...\",\n      \"optionC\": \"...\",\n      \"optionD\": \"...\",\n      \"marks\": 10\n    }\n  ]\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Exam Answers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"replace-with-question-uuid\",\n      \"selectedOption\": \"A\"\n    },\n    {\n      \"questionId\": \"replace-with-question-uuid-2\",\n      \"selectedOption\": \"C\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/slots/{{slotId}}/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "exams", "slots", "{{slotId}}", "submit"]
+            },
+            "description": "Submit answers for an exam slot. Triggers grading via Kafka events.\n\n`selectedOption` values: `A`, `B`, `C`, or `D`\n\n**Response 200:** Submission confirmation"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Enrollment",
+      "description": "Enrollment endpoints — enroll in exams and track enrollment status. Enrollment triggers the SAGA pattern: enrollment → payment → exam slot creation.",
+      "item": [
+        {
+          "name": "Enroll in Exam",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set('enrollmentId', jsonData.id);",
+                  "    console.log('Enrollment ID saved:', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"examId\": \"{{examId}}\",\n  \"examPrice\": 49.99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/enrollments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "enrollments"]
+            },
+            "description": "Enroll in an exam. Initiates the SAGA pattern:\n1. Creates enrollment (PENDING)\n2. Publishes payment request via Debezium CDC outbox\n3. Payment service processes → publishes PaymentCompleted event\n4. Exam service creates exam slot\n5. Enrollment moves to CONFIRMED\n\n**Response 201:**\n```json\n{\n  \"id\": \"uuid\",\n  \"studentId\": \"uuid\",\n  \"examId\": \"a1000000-...\",\n  \"status\": \"PENDING\",\n  \"enrolledAt\": \"2026-03-15T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/enrollments/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "enrollments", "me"]
+            },
+            "description": "Get all enrollments for the currently authenticated student.\n\n**Response 200:** Array of enrollment objects"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Enrollment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/enrollments/{{enrollmentId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "enrollments", "{{enrollmentId}}"]
+            },
+            "description": "Get a specific enrollment by ID.\n\n**Response 200:** Single enrollment object\n**Response 404:** Enrollment not found"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Certificates",
+      "description": "Certificate endpoints — retrieve and verify certificates issued after passing an exam.",
+      "item": [
+        {
+          "name": "Get Certificate",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/certificates/{{certificateId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "certificates", "{{certificateId}}"]
+            },
+            "description": "Retrieve a certificate by its ID.\n\n**Response 200:**\n```json\n{\n  \"certificateId\": \"uuid\",\n  \"studentName\": \"Test Student\",\n  \"examTitle\": \"Cloud Computing Fundamentals\",\n  \"scorePercentage\": 85.0,\n  \"issuedAt\": \"2026-03-15T12:00:00Z\",\n  \"verifyCode\": \"CERT-XXXXX\",\n  \"downloadUrl\": \"http://...\"\n}\n```\n\n**Response 404:** Certificate not found"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Certificate (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/certificates/verify/{{verifyCode}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "certificates", "verify", "{{verifyCode}}"]
+            },
+            "description": "Publicly verify a certificate using its verification code. **No authentication required.**\n\n**Response 200:**\n```json\n{\n  \"valid\": true,\n  \"certificateId\": \"uuid\",\n  \"studentName\": \"Test Student\",\n  \"examTitle\": \"Cloud Computing Fundamentals\",\n  \"scorePercentage\": 85.0,\n  \"issuedAt\": \"2026-03-15T12:00:00Z\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin/Examiner endpoints — manage exams and questions. Requires ADMIN or EXAMINER role JWT token.",
+      "item": [
+        {
+          "name": "Create Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Docker & Kubernetes Mastery\",\n  \"description\": \"Advanced containerisation and orchestration concepts covering Docker, Kubernetes, and cloud-native patterns.\",\n  \"durationMinutes\": 120,\n  \"passingScore\": 75,\n  \"totalMarks\": 100,\n  \"price\": 79.99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams"]
+            },
+            "description": "Create a new exam. Requires ADMIN or EXAMINER role.\n\n**Response 201:** Created exam object"
+          },
+          "response": []
+        },
+        {
+          "name": "List All Exams (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams"]
+            },
+            "description": "List all exams including inactive ones (admin view).\n\n**Response 200:** Array of all exams"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Exam (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams/{{examId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams", "{{examId}}"]
+            },
+            "description": "Get a specific exam by ID (admin view).\n\n**Response 200:** Exam object\n**Response 404:** Not found"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Exam",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cloud Computing Fundamentals (Updated)\",\n  \"description\": \"Updated description.\",\n  \"durationMinutes\": 90,\n  \"passingScore\": 70,\n  \"totalMarks\": 100,\n  \"price\": 49.99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams/{{examId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams", "{{examId}}"]
+            },
+            "description": "Update an existing exam's details.\n\n**Response 200:** Updated exam\n**Response 404:** Not found"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Exam",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams/{{examId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams", "{{examId}}"]
+            },
+            "description": "Soft-delete (deactivate) an exam. The exam is not permanently deleted.\n\n**Response 200:**\n```json\n{\"message\": \"Exam deactivated\"}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Question to Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionText\": \"Which of the following best describes Infrastructure as a Service (IaaS)?\",\n  \"optionA\": \"A platform that provides runtime environments for applications\",\n  \"optionB\": \"Virtualised computing resources delivered over the internet\",\n  \"optionC\": \"Software applications hosted and managed by a third party\",\n  \"optionD\": \"A container orchestration service\",\n  \"correctOption\": \"B\",\n  \"marks\": 10,\n  \"sortOrder\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams/{{examId}}/questions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams", "{{examId}}", "questions"]
+            },
+            "description": "Add a multiple-choice question to an exam.\n\n`correctOption`: `A`, `B`, `C`, or `D`\n`sortOrder`: display order (1, 2, 3...)\n\n**Response 201:** Created question object"
+          },
+          "response": []
+        },
+        {
+          "name": "List Exam Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/exams/{{examId}}/questions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "exams", "{{examId}}", "questions"]
+            },
+            "description": "List all questions for an exam, sorted by `sortOrder`.\n\n**Response 200:** Array of question objects (including `correctOption`)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

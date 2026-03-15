@@ -1,0 +1,28 @@
+{
+  "name": "certificate-outbox-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres-certificate",
+    "database.port": "5432",
+    "database.user": "certificate_user",
+    "database.password": "certificate_pass",
+    "database.dbname": "certificate_db",
+    "database.server.name": "certificate",
+    "topic.prefix": "certificate",
+    "table.include.list": "public.outbox_events",
+    "plugin.name": "pgoutput",
+    "slot.name": "certificate_outbox_slot",
+    "publication.name": "certificate_outbox_pub",
+    "transforms": "outbox",
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "transforms.outbox.table.field.event.id": "id",
+    "transforms.outbox.table.field.event.key": "aggregate_id",
+    "transforms.outbox.table.field.event.type": "event_type",
+    "transforms.outbox.table.field.event.payload": "payload",
+    "transforms.outbox.route.by.field": "topic",
+    "transforms.outbox.route.topic.replacement": "${routedByValue}",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "heartbeat.interval.ms": "5000"
+  }
+}

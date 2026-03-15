@@ -1,0 +1,28 @@
+{
+  "name": "enrollment-outbox-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres-enrollment",
+    "database.port": "5432",
+    "database.user": "enrollment_user",
+    "database.password": "enrollment_pass",
+    "database.dbname": "enrollment_db",
+    "database.server.name": "enrollment",
+    "topic.prefix": "enrollment",
+    "table.include.list": "public.outbox_events",
+    "plugin.name": "pgoutput",
+    "slot.name": "enrollment_outbox_slot",
+    "publication.name": "enrollment_outbox_pub",
+    "transforms": "outbox",
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "transforms.outbox.table.field.event.id": "id",
+    "transforms.outbox.table.field.event.key": "aggregate_id",
+    "transforms.outbox.table.field.event.type": "event_type",
+    "transforms.outbox.table.field.event.payload": "payload",
+    "transforms.outbox.route.by.field": "topic",
+    "transforms.outbox.route.topic.replacement": "${routedByValue}",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "heartbeat.interval.ms": "5000"
+  }
+}
