@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { register as registerApi } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,7 @@ import type { RegisterRequest } from '../types';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login: storeAuth } = useAuth();
+  const { login: storeAuth, isAuthenticated } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterRequest>();
 
   const mutation = useMutation({
@@ -17,6 +17,10 @@ const RegisterPage: React.FC = () => {
       navigate('/');
     },
   });
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const onSubmit = (data: RegisterRequest) => mutation.mutate(data);
 

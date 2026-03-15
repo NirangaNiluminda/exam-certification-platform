@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -7,16 +7,22 @@ import type { LoginRequest } from '../types';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login: storeAuth } = useAuth();
+  const { login: storeAuth, isAuthenticated, isAdmin } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginRequest>();
 
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
       storeAuth(data);
-      navigate('/');
+      const adminUser = data.role === 'ADMIN' || data.role === 'EXAMINER';
+      navigate(adminUser ? '/admin' : '/');
     },
   });
+
+  // Redirect away if already authenticated (handles post-login re-render and direct navigation to /login)
+  if (isAuthenticated) {
+    return <Navigate to={isAdmin ? '/admin' : '/'} replace />;
+  }
 
   const onSubmit = (data: LoginRequest) => mutation.mutate(data);
 

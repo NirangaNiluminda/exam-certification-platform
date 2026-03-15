@@ -8,7 +8,8 @@ import AdminRoute from './components/AdminRoute';
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
+import StudentDashboardPage from './pages/StudentDashboardPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import ExamDetailPage from './pages/ExamDetailPage';
 import MyEnrollmentsPage from './pages/MyEnrollmentsPage';
 import TakeExamPage from './pages/TakeExamPage';
@@ -41,13 +42,14 @@ function App() {
               <Route path="/verify/:verifyCode?" element={<VerifyCertificatePage />} />
 
               {/* Protected student routes */}
-              <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><StudentDashboardPage /></ProtectedRoute>} />
               <Route path="/exams/:examId" element={<ProtectedRoute><ExamDetailPage /></ProtectedRoute>} />
               <Route path="/enrollments" element={<ProtectedRoute><MyEnrollmentsPage /></ProtectedRoute>} />
               <Route path="/exam/:slotId" element={<ProtectedRoute><TakeExamPage /></ProtectedRoute>} />
               <Route path="/certificates/:certificateId" element={<ProtectedRoute><CertificatePage /></ProtectedRoute>} />
 
               {/* Admin-only routes */}
+              <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
               <Route path="/admin/exams" element={<AdminRoute><AdminExamsPage /></AdminRoute>} />
               <Route path="/admin/exams/new" element={<AdminRoute><AdminExamFormPage /></AdminRoute>} />
               <Route path="/admin/exams/:examId/edit" element={<AdminRoute><AdminExamFormPage /></AdminRoute>} />
