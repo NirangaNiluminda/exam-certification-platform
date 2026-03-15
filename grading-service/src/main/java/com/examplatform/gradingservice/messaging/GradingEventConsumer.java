@@ -49,6 +49,8 @@ public class GradingEventConsumer {
 
             if ("EXAM_SUBMITTED".equals(eventType)) {
                 grade(node);
+            } else if ("QUESTION_CREATED".equals(eventType)) {
+                saveAnswerKey(node);
             } else {
                 log.warn("Unknown grading event: {}", eventType);
             }
@@ -61,6 +63,22 @@ public class GradingEventConsumer {
         } catch (Exception e) {
             log.error("Failed to process grading event: {}", message, e);
             throw new RuntimeException("Grading event processing failed", e);
+        }
+    }
+
+    private void saveAnswerKey(JsonNode node) {
+        UUID questionId = UUID.fromString(node.path("questionId").asText());
+        UUID examId = UUID.fromString(node.path("examId").asText());
+        String correctOption = node.path("correctOption").asText();
+        if (answerKeyRepository.findByQuestionId(questionId).isEmpty()) {
+            answerKeyRepository.save(AnswerKey.builder()
+                    .questionId(questionId)
+                    .examId(examId)
+                    .correctOption(correctOption)
+                    .build());
+            log.info("Answer key saved: questionId={}, correctOption={}", questionId, correctOption);
+        } else {
+            log.debug("Answer key already exists for questionId={}, skipping", questionId);
         }
     }
 

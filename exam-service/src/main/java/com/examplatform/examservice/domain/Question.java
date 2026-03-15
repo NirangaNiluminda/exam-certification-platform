@@ -1,5 +1,6 @@
 package com.examplatform.examservice.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,6 +19,7 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_id", nullable = false)
     private Exam exam;
@@ -44,4 +46,9 @@ public class Question {
     @Column(name = "sort_order", nullable = false)
     @Builder.Default
     private Integer sortOrder = 0;
+
+    @JsonIgnore
+    @Column(name = "correct_option", nullable = false, length = 1)
+    @Builder.Default
+    private String correctOption = "A";
 }

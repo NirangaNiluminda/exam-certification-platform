@@ -1,8 +1,10 @@
 package com.examplatform.examservice.controller;
 
 import com.examplatform.examservice.controller.dto.ExamRequest;
+import com.examplatform.examservice.controller.dto.QuestionAdminResponse;
 import com.examplatform.examservice.controller.dto.QuestionRequest;
 import com.examplatform.examservice.domain.*;
+import com.examplatform.outbox.OutboxEventDispatcher;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ public class ExamAdminController {
 
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final OutboxEventDispatcher outboxEventDispatcher;
 
     // ── Exam CRUD ──────────────────────────────────────────────────
 
@@ -88,8 +91,9 @@ public class ExamAdminController {
     // ── Question CRUD ──────────────────────────────────────────────
 
     @PostMapping("/exams/{examId}/questions")
-    public ResponseEntity<Question> addQuestion(@PathVariable UUID examId,
-                                                 @Valid @RequestBody QuestionRequest req) {
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<QuestionAdminResponse> addQuestion(@PathVariable UUID examId,
+                                                              @Valid @RequestBody QuestionRequest req) {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new IllegalArgumentException("Exam not found: " + examId));
 
@@ -100,14 +104,33 @@ public class ExamAdminController {
                 .optionB(req.optionB())
                 .optionC(req.optionC())
                 .optionD(req.optionD())
+                .correctOption(req.correctOption())
                 .marks(req.marks())
                 .sortOrder(req.sortOrder())
                 .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(questionRepository.save(q));
+        Question saved = questionRepository.save(q);
+
+        // Dispatch answer key to grading-service via outbox
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("eventId", UUID.randomUUID().toString());
+        payload.put("eventType", "QUESTION_CREATED");
+        payload.put("questionId", saved.getId().toString());
+        payload.put("examId", examId.toString());
+        payload.put("correctOption", saved.getCorrectOption());
+        outboxEventDispatcher.dispatch(examId, "Question", "QUESTION_CREATED",
+                "grading.inbox.events", payload);
+
+        log.info("Added question: id={}, examId={}", saved.getId(), examId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(QuestionAdminResponse.from(saved));
     }
 
     @GetMapping("/exams/{examId}/questions")
-    public ResponseEntity<List<Question>> listQuestions(@PathVariable UUID examId) {
-        return ResponseEntity.ok(questionRepository.findAllByExamIdOrderBySortOrderAsc(examId));
+    public ResponseEntity<List<QuestionAdminResponse>> listQuestions(@PathVariable UUID examId) {
+        List<QuestionAdminResponse> questions = questionRepository
+                .findAllByExamIdOrderBySortOrderAsc(examId)
+                .stream()
+                .map(QuestionAdminResponse::from)
+                .toList();
+        return ResponseEntity.ok(questions);
     }
 }
