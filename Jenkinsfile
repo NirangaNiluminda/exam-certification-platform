@@ -12,7 +12,7 @@ pipeline {
     }
 
     environment {
-        IMAGE_REGISTRY  = "ghcr.io/${env.GITHUB_OWNER ?: 'your-org'}/exam-platform"
+        IMAGE_REGISTRY  = "ghcr.io/niranganiluminda/exam-platform"
         HELM_CHART      = './charts/exam-platform'
         STAGING_NS      = 'exam-platform-staging'
         PROD_NS         = 'exam-platform'
@@ -26,7 +26,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'ghcr-token', variable: 'GHCR_TOKEN')]) {
                     sh """
-                        echo \$GHCR_TOKEN | docker login ghcr.io -u \$GITHUB_OWNER --password-stdin
+                        echo \$GHCR_TOKEN | docker login ghcr.io -u NirangaNiluminda --password-stdin
                         for svc in ${SERVICES}; do
                             docker pull ${IMAGE_REGISTRY}/\$svc:${params.IMAGE_TAG}
                             echo "Pulled \$svc:${params.IMAGE_TAG}"
