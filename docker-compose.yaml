@@ -375,7 +375,9 @@ services:
   # ── JENKINS (CD pipeline) ───────────────────────────────────────
 
   jenkins:
-    image: jenkins/jenkins:lts-jdk21
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
     container_name: jenkins
     user: root
     environment:
