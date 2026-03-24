@@ -117,6 +117,7 @@ jobs:
         run: |
           TAG=${GITHUB_SHA::8}
           REPO="ghcr.io/${{ github.repository_owner }}/exam-platform"
+          REPO=${REPO,,}
           SERVICES="auth-service enrollment-service payment-service exam-service grading-service certificate-service notification-service api-gateway"
           for svc in $SERVICES; do
             echo "Building $svc..."
