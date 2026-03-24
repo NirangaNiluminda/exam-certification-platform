@@ -1,7 +1,7 @@
 # Online Exam & Certification Platform
 ### EC7205 Cloud Computing — University of Ruhuna | Assignment 2
 
-A cloud-native microservices platform where students enroll in certification exams, take timed anti-cheat exams, receive instant grading, and get auto-generated PDF certificates..
+A cloud-native microservices platform where students enroll in certification exams, take timed anti-cheat exams, receive instant grading, and get auto-generated PDF certificates...
 
 ---
 
