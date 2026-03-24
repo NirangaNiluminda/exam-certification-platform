@@ -2,18 +2,11 @@ FROM jenkins/jenkins:lts-jdk21
 
 USER root
 
-# Install prerequisites
-RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg2 \
-    software-properties-common
+# Install basic tools
+RUN apt-get update && apt-get install -y curl
 
-# Install Docker CLI
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
-    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable" && \
-    apt-get update && apt-get install -y docker-ce-cli
+# Install Docker CLI using the official convenience script
+RUN curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
 
 # Install Helm
 RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
