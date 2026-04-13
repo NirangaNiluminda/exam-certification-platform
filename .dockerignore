@@ -1,0 +1,25 @@
+# Build outputs — exclude any host-compiled artifacts
+**/target/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# IDE and tooling
+.git/
+.github/
+.idea/
+*.iml
+
+# Kubernetes Helm charts (not needed for Docker builds)
+charts/
+
+# Utility scripts and documentation
+scripts/
+*.md
+
+# Keys are mounted as volumes at runtime, not baked into images
+keys/
+
+# Postman collection and other dev artefacts
+*.json

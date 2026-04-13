@@ -400,8 +400,8 @@ services:
 
   auth-service:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: auth-service/Dockerfile
     container_name: auth-service
     depends_on:
       postgres-auth:
@@ -428,8 +428,8 @@ services:
 
   enrollment-service:
     build:
-      context: ./enrollment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: enrollment-service/Dockerfile
     container_name: enrollment-service
     depends_on:
       postgres-enrollment:
@@ -456,8 +456,8 @@ services:
 
   payment-service:
     build:
-      context: ./payment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: payment-service/Dockerfile
     container_name: payment-service
     depends_on:
       postgres-payment:
@@ -483,8 +483,8 @@ services:
 
   exam-service:
     build:
-      context: ./exam-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: exam-service/Dockerfile
     container_name: exam-service
     depends_on:
       postgres-exam:
@@ -511,8 +511,8 @@ services:
 
   grading-service:
     build:
-      context: ./grading-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: grading-service/Dockerfile
     container_name: grading-service
     depends_on:
       postgres-grading:
@@ -538,8 +538,8 @@ services:
 
   certificate-service:
     build:
-      context: ./certificate-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: certificate-service/Dockerfile
     container_name: certificate-service
     depends_on:
       postgres-certificate:
@@ -571,8 +571,8 @@ services:
 
   notification-service:
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: notification-service/Dockerfile
     container_name: notification-service
     depends_on:
       kafka-1:
@@ -593,8 +593,8 @@ services:
 
   api-gateway:
     build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: api-gateway
     depends_on:
       auth-service:
