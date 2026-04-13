@@ -15,16 +15,18 @@ COPY grading-service/pom.xml      grading-service/pom.xml
 COPY certificate-service/pom.xml  certificate-service/pom.xml
 COPY notification-service/pom.xml notification-service/pom.xml
 
-# Pre-download all external dependencies (cached layer — skipped on source-only changes).
-# -am = also-make: Maven resolves deps for outbox (local library) + this service.
-RUN mvn -B dependency:resolve -pl payment-service -am -q
+# Install the outbox shared library into the local Maven repository first.
+# dependency:resolve cannot resolve local-only modules otherwise.
+COPY outbox/src outbox/src
+RUN mvn -B clean install -pl outbox -DskipTests -q
 
-# Copy source code for the outbox shared library and this service.
-COPY outbox/src          outbox/src
+# Pre-download all external dependencies for this service (cached layer).
+# Skipped on source-only changes to this service.
+RUN mvn -B dependency:resolve -pl payment-service -q
+
+# Copy source code for this service and compile.
 COPY payment-service/src payment-service/src
-
-# Compile and package. -am ensures outbox is compiled first.
-RUN mvn -B clean package -pl payment-service -am -DskipTests
+RUN mvn -B clean package -pl payment-service -DskipTests
 
 # ── Stage 2: Runtime ────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine
