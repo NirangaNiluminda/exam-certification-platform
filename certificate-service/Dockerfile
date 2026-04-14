@@ -15,8 +15,12 @@ COPY grading-service/pom.xml      grading-service/pom.xml
 COPY certificate-service/pom.xml  certificate-service/pom.xml
 COPY notification-service/pom.xml notification-service/pom.xml
 
-# Install the outbox shared library into the local Maven repository first.
-# dependency:resolve cannot resolve local-only modules otherwise.
+# Install the ROOT POM into .m2 first (-N = non-recursive, no submodule compilation).
+# Required because outbox's installed .pom declares this root as its <parent>;
+# Maven follows that parent chain when reading outbox's artifact descriptor from .m2.
+RUN mvn -B install -N -q
+
+# Now install outbox into .m2 so downstream dependency resolution can find it.
 COPY outbox/src outbox/src
 RUN mvn -B clean install -pl outbox -DskipTests -q
 
