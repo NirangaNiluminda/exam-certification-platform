@@ -116,7 +116,7 @@ pipeline {
             echo "CD Pipeline FAILED for ${params.IMAGE_TAG}"
         }
         always {
-            cleanWs()
+            deleteDir()
         }
     }
 }
