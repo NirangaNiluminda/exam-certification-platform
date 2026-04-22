@@ -33,7 +33,7 @@ jobs:
 
   # ── STAGE 3: STATIC ANALYSIS (SonarQube) ──────────────────────
   sonarqube:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted          # runs on local machine → reaches SonarQube at localhost:9090
     needs: build
     continue-on-error: true
     steps:
@@ -49,10 +49,12 @@ jobs:
           cache: maven
 
       - name: SonarQube Scan via Maven
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn clean verify sonar:sonar -Dsonar.projectKey=exam-certification-platform -Dsonar.projectName=Exam-Certification-Platform -DskipTests --no-transfer-progress
+        run: mvn clean verify sonar:sonar
+          -Dsonar.projectKey=exam-certification-platform
+          -Dsonar.projectName=Exam-Certification-Platform
+          -Dsonar.host.url=http://localhost:9090
+          -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          -DskipTests --no-transfer-progress
 
   # ── STAGE 4: TEST ──────────────────────────────────────────────
   test:
