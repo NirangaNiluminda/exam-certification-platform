@@ -125,7 +125,7 @@ jobs:
           SERVICES="auth-service enrollment-service payment-service exam-service grading-service certificate-service notification-service api-gateway"
           for svc in $SERVICES; do
             echo "Building $svc..."
-            docker build -t "$REPO/$svc:$TAG" -t "$REPO/$svc:latest" "./$svc"
+            docker build -f "./$svc/Dockerfile" -t "$REPO/$svc:$TAG" -t "$REPO/$svc:latest" "."
             docker push "$REPO/$svc:$TAG"
             docker push "$REPO/$svc:latest"
             echo "Pushed $svc:$TAG"
