@@ -2,6 +2,7 @@ package com.examplatform.outbox;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -38,7 +39,13 @@ public class OutboxEventDispatcher {
                          String topic,
                          Object payload) {
         try {
-            String payloadJson = objectMapper.writeValueAsString(payload);
+            // Inject eventType and a unique eventId for idempotency if not already set
+            ObjectNode payloadNode = objectMapper.valueToTree(payload);
+            payloadNode.put("eventType", eventType);
+            if (!payloadNode.hasNonNull("eventId") || payloadNode.get("eventId").asText().isBlank()) {
+                payloadNode.put("eventId", UUID.randomUUID().toString());
+            }
+            String payloadJson = objectMapper.writeValueAsString(payloadNode);
             OutboxEvent event = OutboxEvent.builder()
                     .aggregateId(aggregateId)
                     .aggregateType(aggregateType)

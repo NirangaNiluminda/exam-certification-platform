@@ -112,6 +112,7 @@ public class ExamEventConsumer {
         payload.put("studentId", slot.getStudentId().toString());
         payload.put("studentEmail", slot.getStudentEmail());
         payload.put("studentName", slot.getStudentName());
+        payload.put("scheduledAt", Instant.now().toString());
 
         outboxEventDispatcher.dispatch(
                 slot.getEnrollmentId(),

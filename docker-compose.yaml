@@ -275,9 +275,9 @@ services:
       CONFIG_STORAGE_TOPIC: exam.connect.configs
       OFFSET_STORAGE_TOPIC: exam.connect.offsets
       STATUS_STORAGE_TOPIC: exam.connect.status
-      CONFIG_STORAGE_REPLICATION_FACTOR: 3
-      OFFSET_STORAGE_REPLICATION_FACTOR: 3
-      STATUS_STORAGE_REPLICATION_FACTOR: 3
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
     ports:
@@ -378,8 +378,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.jenkins
+      network: host
     container_name: jenkins
     user: root
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
     ports:
@@ -416,7 +420,7 @@ services:
     volumes:
       - ./keys:/keys:ro
     ports:
-      - "8081:8081"
+      - "20081:8081"
     networks:
       - exam-net
     restart: unless-stopped
@@ -444,7 +448,7 @@ services:
       JWT_PUBLIC_KEY_PATH: /keys/public_key.pem
       SERVER_PORT: 8082
     ports:
-      - "8082:8082"
+      - "20082:8082"
     networks:
       - exam-net
     restart: unless-stopped
@@ -471,7 +475,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
       SERVER_PORT: 8083
     ports:
-      - "18083:8083"
+      - "20083:8083"
     networks:
       - exam-net
     restart: unless-stopped
@@ -499,7 +503,7 @@ services:
       JWT_PUBLIC_KEY_PATH: /keys/public_key.pem
       SERVER_PORT: 8084
     ports:
-      - "8084:8084"
+      - "20084:8084"
     networks:
       - exam-net
     restart: unless-stopped
@@ -526,7 +530,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
       SERVER_PORT: 8085
     ports:
-      - "8085:8085"
+      - "20085:8085"
     networks:
       - exam-net
     restart: unless-stopped
@@ -559,7 +563,7 @@ services:
       MINIO_BUCKET: certificates
       SERVER_PORT: 8086
     ports:
-      - "8086:8086"
+      - "20086:8086"
     networks:
       - exam-net
     restart: unless-stopped
@@ -581,7 +585,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9093,kafka-3:9094
       SERVER_PORT: 8087
     ports:
-      - "8087:8087"
+      - "20087:8087"
     networks:
       - exam-net
     restart: unless-stopped
@@ -615,7 +619,7 @@ services:
     volumes:
       - ./keys:/keys:ro
     ports:
-      - "8080:8080"
+      - "20080:8080"
     networks:
       - exam-net
     restart: unless-stopped
@@ -661,7 +665,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     ports:
-      - "3000:80"
+      - "20000:80"
     depends_on:
       api-gateway:
         condition: service_healthy

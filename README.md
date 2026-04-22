@@ -211,3 +211,5 @@ Watch it in Kafka UI at http://localhost:8088 — see events flow through topics
 ## Team
 - EC7205 Cloud Computing — University of Ruhuna
 - Assignment 2 | Deadline: 25th April 2026
+
+sonaqube token - sqa_6dbf2b9e38615f738900fdb686b951d429b6c83e

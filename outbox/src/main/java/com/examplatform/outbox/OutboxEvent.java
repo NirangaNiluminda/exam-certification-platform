@@ -39,6 +39,7 @@ public class OutboxEvent {
 
     /** JSON payload — the full event data consumed by downstream services */
     @Column(name = "payload", columnDefinition = "jsonb", nullable = false)
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private String payload;
 
     /** Kafka topic this event should be routed to by Debezium Outbox Event Router */
