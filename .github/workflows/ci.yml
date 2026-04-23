@@ -61,6 +61,21 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Wait for SonarQube to be ready
+        run: |
+          echo "Waiting for SonarQube at localhost:9090..."
+          for i in $(seq 1 24); do
+            status=$(curl -s http://localhost:9090/api/system/status | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null)
+            if [ "$status" = "UP" ]; then
+              echo "SonarQube is UP"
+              exit 0
+            fi
+            echo "Attempt $i/24 — status: $status. Retrying in 10s..."
+            sleep 10
+          done
+          echo "SonarQube did not become ready in time"
+          exit 1
+
       - name: SonarQube Scan via Maven
         run: |
           mvn clean verify sonar:sonar \
