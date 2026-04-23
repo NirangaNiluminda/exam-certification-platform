@@ -415,3 +415,5 @@ docker pull ghcr.io/niranganiluminda/exam-platform/api-gateway:production
 
 ## Team
 EC7205 Cloud Computing — University of Ruhuna | Assignment 2 | April 2026
+
+<!-- ci: ngrok tunnel configured for Jenkins, saga flow fixes -->
