@@ -12,16 +12,18 @@ const AdminQuestionsPage: React.FC = () => {
     defaultValues: { marks: 10, sortOrder: 1, correctOption: 'A' },
   });
 
+  const isValidId = !!examId && examId !== 'undefined';
+
   const { data: exam } = useQuery({
     queryKey: ['admin-exam', examId],
     queryFn: () => adminGetExam(examId!),
-    enabled: !!examId,
+    enabled: isValidId,
   });
 
   const { data: questions, isLoading } = useQuery({
     queryKey: ['admin-questions', examId],
     queryFn: () => adminGetQuestions(examId!),
-    enabled: !!examId,
+    enabled: isValidId,
   });
 
   const addMutation = useMutation({
@@ -33,6 +35,17 @@ const AdminQuestionsPage: React.FC = () => {
   });
 
   const onSubmit = (data: QuestionRequest) => addMutation.mutate(data);
+
+  if (!isValidId) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <p className="text-red-500 mb-4">Invalid exam ID. Please select an exam from the list.</p>
+        <button onClick={() => navigate('/admin/exams')} className="text-indigo-600 hover:underline text-sm">
+          ← Back to exams
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

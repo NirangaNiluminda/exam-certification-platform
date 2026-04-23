@@ -24,7 +24,7 @@ const StudentDashboardPage: React.FC = () => {
   const isLoading = examsLoading || enrollmentsLoading;
   const availableCount = exams?.length ?? 0;
   const enrolledCount = enrollments?.length ?? 0;
-  const confirmedCount = enrollments?.filter((e) => e.status === 'CONFIRMED').length ?? 0;
+  const confirmedCount = enrollments?.filter((e) => e.status === 'EXAM_SCHEDULED').length ?? 0;
 
   return (
     <motion.div

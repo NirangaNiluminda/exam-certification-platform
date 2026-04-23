@@ -52,7 +52,7 @@ public class CertificateEventConsumer {
 
             log.info("Received certificate event: type={}, eventId={}", eventType, eventId);
 
-            if ("EXAM_GRADED".equals(eventType)) {
+            if ("EXAM_GRADED".equals(eventType) || "GENERATE_CERTIFICATE".equals(eventType)) {
                 issueCertificate(node);
             } else {
                 log.warn("Unknown certificate event: {}", eventType);
@@ -76,7 +76,8 @@ public class CertificateEventConsumer {
         String studentName = node.path("studentName").asText();
         UUID examId = UUID.fromString(node.path("examId").asText());
         String examTitle = node.path("examTitle").asText(node.path("exam_title").asText("Certification Exam"));
-        int scorePercentage = node.path("scorePercentage").asInt();
+        int scorePercentage = node.path("scorePercentage").asInt(
+                (int) Math.round(node.path("score").asDouble(0)));
 
         // Idempotency — certificate may already be issued
         if (certificateRepository.existsByEnrollmentId(enrollmentId)) {

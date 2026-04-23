@@ -10,11 +10,12 @@ public record EnrollmentResponse(
         UUID   studentId,
         UUID   examId,
         String status,
+        UUID   slotId,
         Instant enrolledAt
 ) {
     public static EnrollmentResponse from(Enrollment e) {
         return new EnrollmentResponse(
                 e.getId(), e.getStudentId(), e.getExamId(),
-                e.getStatus().name(), e.getEnrolledAt());
+                e.getStatus().name(), e.getSlotId(), e.getEnrolledAt());
     }
 }

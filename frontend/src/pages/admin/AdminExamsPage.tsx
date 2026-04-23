@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { adminListExams, adminDeleteExam } from '../../api/admin';
+import { adminListExams, adminDeleteExam, adminActivateExam } from '../../api/admin';
 
 const AdminExamsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,8 +11,13 @@ const AdminExamsPage: React.FC = () => {
     queryFn: adminListExams,
   });
 
-  const deleteMutation = useMutation({
+  const deactivateMutation = useMutation({
     mutationFn: adminDeleteExam,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-exams'] }),
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: adminActivateExam,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-exams'] }),
   });
 
@@ -80,16 +85,29 @@ const AdminExamsPage: React.FC = () => {
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Deactivate "${exam.title}"?`)) {
-                            deleteMutation.mutate(exam.examId);
-                          }
-                        }}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Deactivate
-                      </button>
+                      {exam.active !== false ? (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Deactivate "${exam.title}"?`)) {
+                              deactivateMutation.mutate(exam.examId);
+                            }
+                          }}
+                          className="text-red-500 hover:underline text-xs"
+                        >
+                          Deactivate
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Activate "${exam.title}"?`)) {
+                              activateMutation.mutate(exam.examId);
+                            }
+                          }}
+                          className="text-green-600 hover:underline text-xs"
+                        >
+                          Activate
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

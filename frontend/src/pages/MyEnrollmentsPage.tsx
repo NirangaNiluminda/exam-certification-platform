@@ -1,12 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getMyEnrollments } from '../api/enrollments';
-import type { EnrollmentStatus } from '../types';
-
-const statusColor: Record<EnrollmentStatus, string> = {
+import { getCertificateByEnrollment } from '../api/certificates';
+const statusColor: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700',
-  CONFIRMED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
+  PAYMENT_COMPLETED: 'bg-blue-100 text-blue-700',
+  EXAM_SCHEDULED: 'bg-green-100 text-green-700',
+  EXAM_SUBMITTED: 'bg-indigo-100 text-indigo-700',
+  GRADED: 'bg-purple-100 text-purple-700',
+  CERTIFIED: 'bg-emerald-100 text-emerald-700',
+  FAILED: 'bg-red-100 text-red-700',
+  CANCELLED: 'bg-gray-100 text-gray-500',
+};
+
+const CertificateButton: React.FC<{ enrollmentId: string }> = ({ enrollmentId }) => {
+  const navigate = useNavigate();
+  const { data: cert } = useQuery({
+    queryKey: ['cert-by-enrollment', enrollmentId],
+    queryFn: () => getCertificateByEnrollment(enrollmentId),
+    retry: false,
+  });
+  if (!cert) return null;
+  return (
+    <button
+      onClick={() => navigate(`/certificates/${cert.certificateId}`)}
+      className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-1.5 rounded-lg"
+    >
+      View Certificate
+    </button>
+  );
 };
 
 const MyEnrollmentsPage: React.FC = () => {
@@ -74,13 +96,16 @@ const MyEnrollmentsPage: React.FC = () => {
                   {enrollment.status}
                 </span>
 
-                {enrollment.status === 'CONFIRMED' && enrollment.slotId && (
+                {enrollment.status === 'EXAM_SCHEDULED' && enrollment.slotId && (
                   <button
                     onClick={() => navigate(`/exam/${enrollment.slotId}`)}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded-lg"
                   >
                     Take Exam
                   </button>
+                )}
+                {enrollment.status === 'CERTIFIED' && (
+                  <CertificateButton enrollmentId={enrollment.id} />
                 )}
               </div>
             </div>

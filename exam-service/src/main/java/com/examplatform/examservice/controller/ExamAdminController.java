@@ -88,6 +88,17 @@ public class ExamAdminController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/exams/{examId}/activate")
+    public ResponseEntity<Map<String, String>> activateExam(@PathVariable UUID examId) {
+        return examRepository.findById(examId)
+                .map(exam -> {
+                    exam.setActive(true);
+                    examRepository.save(exam);
+                    return ResponseEntity.ok(Map.of("message", "Exam activated"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // ── Question CRUD ──────────────────────────────────────────────
 
     @PostMapping("/exams/{examId}/questions")

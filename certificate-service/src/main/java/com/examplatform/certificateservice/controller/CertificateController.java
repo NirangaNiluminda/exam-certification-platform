@@ -51,6 +51,23 @@ public class CertificateController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/by-enrollment/{enrollmentId}")
+    public ResponseEntity<Map<String, Object>> getByEnrollment(@PathVariable UUID enrollmentId) {
+        return certificateRepository.findByEnrollmentId(enrollmentId)
+                .map(cert -> {
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("certificateId", cert.getId());
+                    body.put("studentName", cert.getStudentName());
+                    body.put("examTitle", cert.getExamTitle());
+                    body.put("scorePercentage", cert.getScorePercentage());
+                    body.put("issuedAt", cert.getIssuedAt());
+                    body.put("verifyCode", cert.getVerifyCode());
+                    body.put("downloadUrl", cert.getDownloadUrl());
+                    return ResponseEntity.ok(body);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     /**
      * Public verification endpoint — no auth required.
      * Used by employers or institutions to verify certificate authenticity.

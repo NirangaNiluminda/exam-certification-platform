@@ -27,9 +27,9 @@ const AdminExamFormPage: React.FC = () => {
   const mutation = useMutation({
     mutationFn: (data: ExamRequest) =>
       isEdit ? adminUpdateExam(examId!, data) : adminCreateExam(data),
-    onSuccess: () => {
+    onSuccess: (saved) => {
       qc.invalidateQueries({ queryKey: ['admin-exams'] });
-      navigate('/admin/exams');
+      navigate(isEdit ? '/admin/exams' : `/admin/exams/${saved.examId}/questions`);
     },
   });
 

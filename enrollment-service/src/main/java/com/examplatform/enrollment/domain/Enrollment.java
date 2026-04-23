@@ -32,6 +32,9 @@ public class Enrollment {
     @Column(name = "enrolled_at", nullable = false)
     private Instant enrolledAt;
 
+    @Column(name = "slot_id")
+    private UUID slotId;
+
     @Column(name = "completed_at")
     private Instant completedAt;
 

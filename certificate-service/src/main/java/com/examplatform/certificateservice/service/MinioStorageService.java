@@ -3,36 +3,36 @@ package com.examplatform.certificateservice.service;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Handles certificate PDF storage in MinIO (S3-compatible object store).
- * Creates the certificates bucket on startup if it doesn't exist.
- */
 @Slf4j
 @Service
 public class MinioStorageService {
 
-    private final MinioClient minioClient;
+    private final MinioClient uploadClient;
+    private final MinioClient presignClient;
     private final String bucketName;
 
-    public MinioStorageService(MinioClient minioClient,
+    public MinioStorageService(MinioClient uploadClient,
+                               @Qualifier("presignClient") MinioClient presignClient,
                                @Value("${minio.bucket:certificates}") String bucketName) {
-        this.minioClient = minioClient;
+        this.uploadClient = uploadClient;
+        this.presignClient = presignClient;
         this.bucketName = bucketName;
         ensureBucketExists();
     }
 
     private void ensureBucketExists() {
         try {
-            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder()
+            boolean exists = uploadClient.bucketExists(BucketExistsArgs.builder()
                     .bucket(bucketName).build());
             if (!exists) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+                uploadClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
                 log.info("Created MinIO bucket: {}", bucketName);
             }
         } catch (Exception e) {
@@ -40,12 +40,9 @@ public class MinioStorageService {
         }
     }
 
-    /**
-     * Uploads a PDF and returns the object key.
-     */
     public String upload(String objectKey, byte[] pdfBytes) {
         try {
-            minioClient.putObject(PutObjectArgs.builder()
+            uploadClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
                     .object(objectKey)
                     .stream(new ByteArrayInputStream(pdfBytes), pdfBytes.length, -1)
@@ -58,12 +55,10 @@ public class MinioStorageService {
         }
     }
 
-    /**
-     * Generates a pre-signed download URL valid for 1 hour.
-     */
+    // Signed with the public-url endpoint so the signature matches when the browser hits localhost:9000
     public String generatePresignedUrl(String objectKey) {
         try {
-            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+            return presignClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
                     .bucket(bucketName)
                     .object(objectKey)
                     .method(Method.GET)

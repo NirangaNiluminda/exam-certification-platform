@@ -1,6 +1,7 @@
 package com.examplatform.enrollment.messaging;
 
 import com.examplatform.enrollment.saga.EnrollmentSaga;
+import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class SagaEventConsumer {
                 case "EXAM_SLOT_SCHEDULED" ->
                     enrollmentSaga.onExamSlotScheduled(
                             enrollmentId,
+                            UUID.fromString(event.get("slotId").asText()),
                             event.get("scheduledAt").asText());
 
                 case "NO_SLOT_AVAILABLE" ->
@@ -66,9 +68,9 @@ public class SagaEventConsumer {
                     enrollmentSaga.onExamGraded(
                             enrollmentId,
                             event.get("passed").asBoolean(),
-                            event.get("percentage").asDouble(),
-                            event.get("studentName").asText(),
-                            event.get("examTitle").asText());
+                            event.path("scorePercentage").asDouble(),
+                            event.path("studentName").asText(""),
+                            event.path("examTitle").asText(""));
 
                 case "CERTIFICATE_ISSUED" ->
                     enrollmentSaga.onCertificateIssued(

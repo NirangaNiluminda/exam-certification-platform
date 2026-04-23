@@ -107,11 +107,12 @@ public class EnrollmentSaga {
     // ── Step 3: Exam slot scheduled ──────────────────────────────
 
     @Transactional
-    public void onExamSlotScheduled(UUID enrollmentId, String scheduledAt) {
+    public void onExamSlotScheduled(UUID enrollmentId, UUID slotId, String scheduledAt) {
         Enrollment enrollment = getEnrollment(enrollmentId);
         SagaState saga = getSaga(enrollmentId);
 
         enrollment.setStatus(EnrollmentStatus.EXAM_SCHEDULED);
+        enrollment.setSlotId(slotId);
         saga.setSagaStatus(SagaStatus.EXAM_SCHEDULED);
         saga.setCurrentStep("AWAITING_EXAM");
 

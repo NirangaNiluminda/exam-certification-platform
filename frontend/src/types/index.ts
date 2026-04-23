@@ -85,7 +85,7 @@ export interface SubmitExamRequest {
 }
 
 // ── Enrollments ───────────────────────────────────────────────────────────────
-export type EnrollmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+export type EnrollmentStatus = 'PENDING' | 'PAYMENT_COMPLETED' | 'EXAM_SCHEDULED' | 'EXAM_SUBMITTED' | 'GRADED' | 'CERTIFIED' | 'FAILED' | 'CANCELLED';
 
 export interface Enrollment {
   id: string;
