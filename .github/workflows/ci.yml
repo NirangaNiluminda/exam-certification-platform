@@ -19,10 +19,24 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
+
+      - name: Restore Maven cache
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
 
       - name: Build with Maven
         run: mvn clean package -DskipTests --no-transfer-progress
+
+      - name: Save Maven cache
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -46,7 +60,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
 
       - name: SonarQube Scan via Maven
         run: |
@@ -69,7 +82,14 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
+
+      - name: Restore Maven cache
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
 
       - name: Run Unit Tests
         run: mvn test --no-transfer-progress
@@ -108,7 +128,14 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
+
+      - name: Restore Maven cache
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
 
       - name: Build all JARs
         run: mvn clean package -DskipTests --no-transfer-progress
